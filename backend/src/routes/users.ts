@@ -30,4 +30,25 @@ users.post("/", zValidator('json', userSchema), async (c) => {
   return c.json(user, 201)
 })
 
+users.get("/:id", async (c) => {
+  const id = Number(c.req.param("id"));
+
+  const user = await prisma.user.findUnique({
+    where: {
+      id,
+    },
+  });
+
+  if (!user) {
+    return c.json(
+      {
+        error: "ユーザーが見つかりません",
+      },
+      404
+    );
+  }
+
+  return c.json(user);
+})
+
 export default users
