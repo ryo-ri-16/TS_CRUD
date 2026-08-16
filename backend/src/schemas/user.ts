@@ -1,0 +1,18 @@
+import z from "zod";
+
+export const userSchema = z.object({
+  name: z.string().min(1, '名前を入力してください'),
+  age: z
+    .number()
+    .int('年齢は整数で入力してください')
+    .min(0, '年齢は0以上で入力してください')
+    .max(150, '年齢が不正です')
+    .nullable(), // ageは任意なのでnullableに
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY']),
+  description: z
+    .string()
+    .max(500, '説明は500文字以内で入力してください')
+    .nullable(), // descriptionも任意
+})
+
+export type UserInput = z.infer<typeof userSchema>
