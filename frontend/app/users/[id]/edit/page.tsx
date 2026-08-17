@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation';
 import UserForm from '../../_components/user-form';
 import Link from 'next/link';
-import type { User } from "@/types/user";
 
 type Props = {
   params: Promise<{

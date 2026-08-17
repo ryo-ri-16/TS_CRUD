@@ -1,6 +1,7 @@
 import type { User } from "@/types/user";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import DeleteButton from "../_components/delete-button";
 
 type Props = {
   params: Promise<{
@@ -23,7 +24,6 @@ export default async function UserDetailPage({ params }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
-      {/* 戻るリンク */}
       <div className="mb-4">
         <Link
           href="/users"
@@ -33,10 +33,9 @@ export default async function UserDetailPage({ params }: Props) {
         </Link>
       </div>
 
-      {/* ユーザー情報 */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h1 className="text-2xl font-bold mb-4">{user.name}</h1>
-        
+
         <dl className="space-y-3">
           <div>
             <dt className="text-sm font-semibold text-gray-600">年齢</dt>
@@ -60,7 +59,6 @@ export default async function UserDetailPage({ params }: Props) {
           </div>
         </dl>
 
-        {/* 編集・削除ボタン */}
         <div className="mt-6 flex gap-3">
           <Link
             href={`/users/${user.id}/edit`}
@@ -68,11 +66,11 @@ export default async function UserDetailPage({ params }: Props) {
           >
             編集
           </Link>
-          <button
+          <div
             className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
-            削除
-          </button>
+            <DeleteButton userId={user.id}/>
+          </div>
         </div>
       </div>
     </div>
