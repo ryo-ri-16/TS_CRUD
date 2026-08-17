@@ -4,16 +4,30 @@ import { useState } from "react";
 import { userSchema } from "../../validations/user-schemas";
 import type { UserFormData } from "../../validations/user-schemas";
 import styles from "./post-form.module.css";
+import { User } from "@/types/user";
+import { useRouter } from "next/navigation";
 
-export default function PostForm() {
-  const [name, setName] = useState("");
-  const [gender, setGender] = useState("MALE");
-  const [age, setAge] = useState("");
-  const [description, setDescription] = useState("");
+type Props = {
+  user?: User;
+}
+
+type Gender = UserFormData["gender"];
+
+export default function UserForm({ user }: Props) {
+  const router = useRouter();
+
+  const [name, setName] = useState(user?.name ?? "");
+  const [gender, setGender] = useState<Gender>(
+    user?.gender ?? "MALE"
+  );
+  const [age, setAge] = useState(user?.age?.toString() ?? "");
+  const [description, setDescription] = useState(user?.description ?? "");
   const [errors, setErrors] = useState<Record<string, string[]>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const isEdit = !!user;
 
     const data: UserFormData = {
       name,
@@ -31,20 +45,30 @@ export default function PostForm() {
 
     setErrors({});
 
-    const response = await fetch("http://localhost:3001/users", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(result.data),
-    });
+    const response = await fetch(
+      isEdit
+        ? `http://localhost:3001/users/${user.id}`
+        : "http://localhost:3001/users",
+      {
+        method: isEdit ? "PATCH" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(result.data),
+      }
+    );
 
     if (response.ok) {
-      alert("ユーザー作成成功!");
+      alert(isEdit ? "ユーザー更新成功" : "ユーザー作成成功!");
 
-      setName("");
-      setAge("");
-      setDescription("");
+      if (isEdit) {
+        router.push(`/users/${user.id}`);
+      } else {
+        setName("");
+        setAge("");
+        setDescription("");
+        setGender("MALE");
+      }
     }
   };
 
@@ -69,12 +93,15 @@ export default function PostForm() {
         <label className={styles.label}>性別</label>
         <select
           value={gender}
-          onChange={(e) => setGender(e.target.value)}
+          onChange={(e) =>
+            setGender(e.target.value as Gender)
+          }
           className={styles.select}
         >
           <option value="MALE">男性</option>
           <option value="FEMALE">女性</option>
           <option value="OTHER">その他</option>
+          <option value="PREFER_NOT_TO_SAY">回答しない</option>
         </select>
       </div>
 

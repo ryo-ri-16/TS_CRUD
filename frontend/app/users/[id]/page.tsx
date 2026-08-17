@@ -1,5 +1,6 @@
 import type { User } from "@/types/user";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 type Props = {
   params: Promise<{
@@ -15,19 +16,14 @@ export default async function UserDetailPage({ params }: Props) {
   );
 
   if (!response.ok) {
-    return (
-      <div className="max-w-2xl mx-auto p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">ユーザーが見つかりません</p>
-        </div>
-      </div>
-    );
+    notFound();
   }
 
   const user: User = await response.json();
 
   return (
     <div className="max-w-2xl mx-auto p-6">
+      {/* 戻るリンク */}
       <div className="mb-4">
         <Link
           href="/users"
@@ -37,8 +33,10 @@ export default async function UserDetailPage({ params }: Props) {
         </Link>
       </div>
 
+      {/* ユーザー情報 */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h1 className="text-2xl font-bold mb-4">{user.name}</h1>
+        
         <dl className="space-y-3">
           <div>
             <dt className="text-sm font-semibold text-gray-600">年齢</dt>
@@ -56,9 +54,26 @@ export default async function UserDetailPage({ params }: Props) {
 
           <div>
             <dt className="text-sm font-semibold text-gray-600">説明</dt>
-            <dd className="text-lg">{user.description ?? "未設定"}</dd>
+            <dd className="text-lg whitespace-pre-wrap">
+              {user.description ?? "未設定"}
+            </dd>
           </div>
         </dl>
+
+        {/* 編集・削除ボタン */}
+        <div className="mt-6 flex gap-3">
+          <Link
+            href={`/users/${user.id}/edit`}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            編集
+          </Link>
+          <button
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            削除
+          </button>
+        </div>
       </div>
     </div>
   );

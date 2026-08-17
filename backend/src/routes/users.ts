@@ -51,4 +51,40 @@ users.get("/:id", async (c) => {
   return c.json(user);
 })
 
+users.patch(
+  "/:id",
+  zValidator("json", userSchema),
+  async (c) => {
+    const id = Number(c.req.param("id"));
+    const body = c.req.valid("json");
+
+    const existingUser = await prisma.user.findUnique({
+      where: { id },
+    })
+
+    if (!existingUser) {
+      return c.json(
+        {
+          error: "ユーザーが見つかりません",
+        },
+        404
+      );
+    }
+
+    const user = await prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        name: body.name,
+        age: body.age,
+        gender: body.gender as Gender,
+        description: body.description,
+      },
+    });
+
+    return c.json(user);
+  }
+);
+
 export default users
