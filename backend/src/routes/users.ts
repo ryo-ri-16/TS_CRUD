@@ -87,4 +87,31 @@ users.patch(
   }
 );
 
+users.delete("/:id", async (c) => {
+  const id = Number(c.req.param("id"));
+
+  const existingUser = await prisma.user.findUnique({
+    where: { id },
+  });
+
+  if (!existingUser) {
+    return c.json(
+      {
+        error: "ユーザーが見つかりません",
+      },
+      404
+    );
+  }
+
+  await prisma.user.delete({
+    where: {
+      id,
+    },
+  });
+
+  return c.json({
+    message: "ユーザーを削除しました",
+  });
+});
+
 export default users
