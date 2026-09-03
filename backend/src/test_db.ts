@@ -9,7 +9,9 @@ async function main() {
       name: "テスト太郎",
       gender: Gender.MALE,
       age: 25,
-      description: "はじめまして"
+      description: "はじめまして",
+      email: "test@example.com",
+      passwordHash: "hashed_password",
     },
   })
   console.log('✅ ユーザー作成成功:', user)

@@ -16,8 +16,8 @@ users.get("/", async (c) => {
   return c.json(users);
 })
 
-users.post("/", zValidator('json', userSchema), async (c) => {
-  const body = c.req.valid('json')
+users.post("/", zValidator("json", userSchema), async (c) => {
+  const body = c.req.valid("json");
 
   const user = await prisma.user.create({
     data: {
@@ -26,9 +26,10 @@ users.post("/", zValidator('json', userSchema), async (c) => {
       age: body.age,
       description: body.description,
     },
-  })
-  return c.json(user, 201)
-})
+  });
+
+  return c.json(user, 201);
+});
 
 users.get("/:id", async (c) => {
   const id = Number(c.req.param("id"));
