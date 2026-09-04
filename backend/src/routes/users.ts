@@ -3,33 +3,34 @@ import { prisma } from "../lib/prisma";
 import { Gender } from "../generated/prisma";
 import { zValidator } from "@hono/zod-validator";
 import { userSchema } from "../schemas/user";
+import { authMiddleware } from "../middleware/auth";
+import type { Variables } from "../types/context";
 
-const users = new Hono()
+const users = new Hono<{
+  Variables: Variables;
+}>();
+
+users.use("*", authMiddleware);
 
 users.get("/", async (c) => {
   const users = await prisma.user.findMany({
     orderBy: {
       id: "asc",
     },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      age: true,
+      gender: true,
+      description: true,
+      createdAt: true,
+      updatedAt: true,
+    },
   });
 
   return c.json(users);
 })
-
-users.post("/", zValidator("json", userSchema), async (c) => {
-  const body = c.req.valid("json");
-
-  const user = await prisma.user.create({
-    data: {
-      name: body.name,
-      gender: body.gender as Gender,
-      age: body.age,
-      description: body.description,
-    },
-  });
-
-  return c.json(user, 201);
-});
 
 users.get("/:id", async (c) => {
   const id = Number(c.req.param("id"));
@@ -37,6 +38,16 @@ users.get("/:id", async (c) => {
   const user = await prisma.user.findUnique({
     where: {
       id,
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      age: true,
+      gender: true,
+      description: true,
+      createdAt: true,
+      updatedAt: true,
     },
   });
 
@@ -56,43 +67,69 @@ users.patch(
   "/:id",
   zValidator("json", userSchema),
   async (c) => {
-    const id = Number(c.req.param("id"));
+    const currentUserId = c.get("userId");
+    const targetUserId = Number(c.req.param("id"));
+
     const body = c.req.valid("json");
 
     const existingUser = await prisma.user.findUnique({
-      where: { id },
-    })
-
-    if (!existingUser) {
-      return c.json(
-        {
-          error: "ユーザーが見つかりません",
-        },
-        404
-      );
-    }
-
-    const user = await prisma.user.update({
       where: {
-        id,
+        id: targetUserId,
       },
-      data: {
-        name: body.name,
-        age: body.age,
-        gender: body.gender as Gender,
-        description: body.description,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        age: true,
+        gender: true,
+        description: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
 
-    return c.json(user);
+  if (!existingUser) {
+    return c.json(
+      {
+        error: "ユーザーが見つかりません",
+      },
+      404
+    );
   }
-);
+
+  // 自分自身のUserか確認
+  if (currentUserId !== existingUser.id) {
+    return c.json(
+      {
+        error: "このユーザーを編集する権限がありません",
+      },
+      403
+    );
+  }
+
+  const user = await prisma.user.update({
+    where: {
+      id: targetUserId,
+    },
+    data: {
+      name: body.name,
+      age: body.age,
+      gender: body.gender as Gender,
+      description: body.description,
+    },
+  });
+
+  return c.json(user);
+});
 
 users.delete("/:id", async (c) => {
-  const id = Number(c.req.param("id"));
+  const currentUserId = c.get("userId");
+  const targetUserId = Number(c.req.param("id"));
 
   const existingUser = await prisma.user.findUnique({
-    where: { id },
+    where: {
+      id: targetUserId,
+    },
   });
 
   if (!existingUser) {
@@ -104,9 +141,18 @@ users.delete("/:id", async (c) => {
     );
   }
 
+  if (currentUserId !== existingUser.id) {
+    return c.json(
+      {
+        error: "このユーザーを削除する権限がありません",
+      },
+      403
+    );
+  }
+
   await prisma.user.delete({
     where: {
-      id,
+      id: targetUserId,
     },
   });
 

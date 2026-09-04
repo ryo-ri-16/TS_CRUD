@@ -1,19 +1,14 @@
-import { serve } from '@hono/node-server'
-import { cors } from "hono/cors"
-import { Hono } from 'hono'
+import { Hono } from "hono";
+import users from "./routes/users";
 import auth from "./routes/auth";
-import users from './routes/users'
+import { serve } from "@hono/node-server";
 
-const app = new Hono()
-
-app.use(
-  "*",
-  cors({
-    origin: "http://localhost:3000",
-  })
-)
+const app = new Hono();
 
 app.route("/auth", auth);
+app.route("/users", users);
+
+export default app;
 
 serve({
   fetch: app.fetch,
