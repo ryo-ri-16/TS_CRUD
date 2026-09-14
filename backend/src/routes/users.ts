@@ -98,7 +98,7 @@ users.patch(
   }
 
   // 自分自身のUserか確認
-  if (currentUserId !== existingUser.id) {
+  if (currentUserId !== targetUserId) {
     return c.json(
       {
         error: "このユーザーを編集する権限がありません",
@@ -141,7 +141,7 @@ users.delete("/:id", async (c) => {
     );
   }
 
-  if (currentUserId !== existingUser.id) {
+  if (currentUserId !== targetUserId) {
     return c.json(
       {
         error: "このユーザーを削除する権限がありません",

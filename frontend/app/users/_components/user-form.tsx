@@ -54,6 +54,7 @@ export default function UserForm({ user }: Props) {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify(result.data),
       }
     );

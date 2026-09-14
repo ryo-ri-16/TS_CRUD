@@ -1,6 +1,7 @@
 import type { User } from "@/types/user";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import DeleteButton from "../_components/delete-button";
 
 type Props = {
@@ -12,8 +13,39 @@ type Props = {
 export default async function UserDetailPage({ params }: Props) {
   const { id } = await params;
 
+  const cookieStore = await cookies();
+  const sessionId = cookieStore.get("session_id");
+
+  const headers = {
+    Cookie: sessionId
+      ? `session_id=${sessionId.value}`
+      : "",
+  };
+
+  const meResponse = await fetch(
+    "http://localhost:3001/auth/me",
+    {
+      headers,
+      cache: "no-store",
+    }
+  );
+
+  if (!meResponse.ok) {
+    return <p>ログインしてください。</p>;
+  }
+
+  const currentUser: User = await meResponse.json();
+
   const response = await fetch(
-    `http://localhost:3001/users/${id}`
+    `http://localhost:3001/users/${id}`,
+    {
+      headers: {
+        Cookie: sessionId
+          ? `session_id=${sessionId.value}`
+          : "",
+      },
+      cache: "no-store",
+    }
   );
 
   if (!response.ok) {
@@ -34,16 +66,24 @@ export default async function UserDetailPage({ params }: Props) {
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h1 className="text-2xl font-bold mb-4">{user.name}</h1>
+        <h1 className="text-2xl font-bold mb-4">
+          {user.name}
+        </h1>
 
         <dl className="space-y-3">
           <div>
-            <dt className="text-sm font-semibold text-gray-600">年齢</dt>
-            <dd className="text-lg">{user.age ?? "未設定"}</dd>
+            <dt className="text-sm font-semibold text-gray-600">
+              年齢
+            </dt>
+            <dd className="text-lg">
+              {user.age ?? "未設定"}
+            </dd>
           </div>
 
           <div>
-            <dt className="text-sm font-semibold text-gray-600">性別</dt>
+            <dt className="text-sm font-semibold text-gray-600">
+              性別
+            </dt>
             <dd className="text-lg">
               {user.gender === "MALE" && "男性"}
               {user.gender === "FEMALE" && "女性"}
@@ -52,7 +92,9 @@ export default async function UserDetailPage({ params }: Props) {
           </div>
 
           <div>
-            <dt className="text-sm font-semibold text-gray-600">説明</dt>
+            <dt className="text-sm font-semibold text-gray-600">
+              説明
+            </dt>
             <dd className="text-lg whitespace-pre-wrap">
               {user.description ?? "未設定"}
             </dd>
@@ -60,17 +102,20 @@ export default async function UserDetailPage({ params }: Props) {
         </dl>
 
         <div className="mt-6 flex gap-3">
+          {user.id === currentUser.id && (
+            <>
           <Link
             href={`/users/${user.id}/edit`}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             編集
           </Link>
-          <div
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            <DeleteButton userId={user.id}/>
+
+          <div className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+            <DeleteButton userId={user.id} />
           </div>
+          </>
+          )}
         </div>
       </div>
     </div>

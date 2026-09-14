@@ -1,51 +1,92 @@
-import Link from "next/link";
-import type { User } from "@/types/user";
+"use client";
 
-export default async function UsersPage() {
-  const response = await fetch("http://localhost:3001/users");
-  const users: User[] = await response.json();
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+
+export default function LoginPage() {
+  const router = useRouter();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("http://localhost:3001/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error ?? "ログインに失敗しました");
+        return;
+      }
+
+      router.push("/users");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">ユーザー一覧</h1>
-        <Link
-          href="/users/new"
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          新規作成
-        </Link>
-      </div>
+    <main className="max-w-md mx-auto p-6">
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h1 className="text-2xl font-bold mb-6">ログイン</h1>
 
-      {users.length === 0 ? (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
-          <p className="text-gray-600">ユーザーがまだ登録されていません</p>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <label className="font-semibold text-sm text-gray-700">
+              メールアドレス
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              required
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="font-semibold text-sm text-gray-700">
+              パスワード
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              required
+            />
+          </div>
+
+          {error && <p className="text-red-600 text-sm">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="bg-blue-600 text-white rounded py-2 font-semibold hover:bg-blue-700 disabled:opacity-50"
+          >
+            {isSubmitting ? "ログイン中..." : "ログイン"}
+          </button>
+        </form>
+
+        <div className="mt-4 text-center">
+          <Link href="/register" className="text-blue-600 hover:text-blue-800 text-sm">
+            アカウントをお持ちでない方はこちら
+          </Link>
         </div>
-      ) : (
-        <div className="grid gap-4">
-          {users.map((user) => (
-            <Link
-              key={user.id}
-              href={`/users/${user.id}`}
-              className="block bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow"
-            >
-              <h2 className="text-lg font-semibold mb-2">{user.name}</h2>
-              <div className="text-sm text-gray-600 space-y-1">
-                <p>年齢: {user.age ?? "未設定"}</p>
-                <p>
-                  性別:
-                  {user.gender === "MALE" && " 男性"}
-                  {user.gender === "FEMALE" && " 女性"}
-                  {user.gender === "OTHER" && " その他"}
-                </p>
-                {user.description && (
-                  <p className="line-clamp-2">{user.description}</p>
-                )}
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
-    </div>
+      </div>
+    </main>
   );
 }
