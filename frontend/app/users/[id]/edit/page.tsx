@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import UserForm from '../../_components/user-form';
 import Link from 'next/link';
+import { cookies } from "next/headers";
 
 type Props = {
   params: Promise<{
@@ -11,8 +12,19 @@ type Props = {
 export default async function EditUserPage({ params }: Props) {
   const { id } = await params;
 
+  const cookieStore = await cookies();
+  const sessionId = cookieStore.get("session_id");
+
   const response = await fetch(
-    `http://localhost:3001/users/${id}`
+    `http://localhost:3001/users/${id}`,
+    {
+      headers: {
+        Cookie: sessionId
+          ? `session_id=${sessionId.value}`
+          : "",
+      },
+      cache: "no-store"
+    }
   );
 
   if (!response.ok) {
