@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import { prisma } from "../lib/prisma";
-import { Gender } from "../generated/prisma";
+import { Gender, Prisma } from "../generated/prisma";
 import { zValidator } from "@hono/zod-validator";
-import { userSchema } from "../schemas/user";
+import { userSchema, userQuerySchema } from "../schemas/user";
 import { authMiddleware } from "../middleware/auth";
 import type { Variables } from "../types/context";
 
@@ -12,24 +12,52 @@ const users = new Hono<{
 
 users.use("*", authMiddleware);
 
-users.get("/", async (c) => {
-  const users = await prisma.user.findMany({
-    orderBy: {
-      id: "asc",
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      age: true,
-      gender: true,
-      description: true,
-      createdAt: true,
-      updatedAt: true,
+users.get("/", zValidator("query", userQuerySchema), async (c) => {
+  const { page, limit, search, sortBy, sortOrder } = c.req.valid("query");
+
+  // 検索キーワードがあれば name / email のどちらかに部分一致（大文字小文字を区別しない）するものを対象にする
+  const where: Prisma.UserWhereInput = search
+    ? {
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+        ],
+      }
+    : {};
+
+  // 一覧データと件数を並列取得する（$transactionではなくPromise.allなのは、
+  // 2つのクエリの間に一貫性を保つ必要がない読み取り専用処理のため）
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      orderBy: {
+        [sortBy]: sortOrder,
+      } as Prisma.UserOrderByWithRelationInput,
+      skip: (page - 1) * limit,
+      take: limit,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        age: true,
+        gender: true,
+        description: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  return c.json({
+    users,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
     },
   });
-
-  return c.json(users);
 })
 
 users.get("/:id", async (c) => {
