@@ -11,7 +11,7 @@
 - `frontend/` — Next.js 16 (App Router)、React 19、Tailwind CSS 4
 - `backend/` — Hono 4 APIサーバー（`wrangler.jsonc` もあり Cloudflare Workers へのデプロイも可能だが、実行は `tsx`/Node経由）、Prisma 7 ORM、PostgreSQL
 
-この2つはワークスペースツールによるモノレポ統合はされていません（workspacesなし）— それぞれが独自の `package.json`、`node_modules` を持ち、個別に開発・起動します。フロントエンドはハードコードされたURL `http://localhost:3001` でバックエンドを直接呼び出します。
+アプリの起動自体は`backend/`と`frontend/`でそれぞれ独立していますが（後述）、npm workspacesでモノレポ化されており、リポジトリルートの `package.json`（`workspaces: ["backend", "frontend", "packages/*"]`）配下に両パッケージと共有パッケージ `packages/shared-schemas` が属しています。依存関係のインストールは **リポジトリルートで `npm install` を1回実行するだけ**でよく（ロックファイルも `package-lock.json` がルートに1つだけ存在し、`backend/`・`frontend/`個別のロックファイルはありません）、共通の依存は極力ルートの`node_modules`にhoistされます（`backend`/`frontend`それぞれの`node_modules`には、バージョンが競合するもの、例えば`typescript`のみがネストされます）。フロントエンドはハードコードされたURL `http://localhost:3001` でバックエンドを直接呼び出します。
 
 ## コマンド
 
@@ -49,13 +49,13 @@ npm run lint    # eslint
 - 所有者チェック（`currentUserId !== targetUserId`）は middleware ではなく、`backend/src/routes/users.ts` 内の `PATCH`/`DELETE` ハンドラに直接書かれています — そのため `GET /users/:id` では誰のユーザー情報でも閲覧できますが、編集・削除は自分自身のものだけに制限されています。
 - フロントエンドにはクライアント側のセッションストアはありません。サーバーコンポーネントはリクエストごとに `next/headers` の `cookies()` から `session_id` Cookieを手動で転送して `/auth/me` を呼び出し（`frontend/app/users/[id]/page.tsx` 参照）、クライアントコンポーネントは fetch 呼び出し時に `credentials: "include"` を付けています。
 
-### バリデーションはフロントエンドとバックエンドで重複している
-`User` の形状に対するZodスキーマは、以下の3箇所に独立して存在しており、フィールドを変更する際は手作業で同期を取る必要があります。
-- `backend/src/schemas/user.ts`（`userSchema`、`users.ts` の `zValidator` で使用）
-- `frontend/app/validations/user-schemas.ts`（`userSchema` / `UserFormData`）
-- `frontend/app/users/_schemas/user-schema.ts`（上記とほぼ重複 — バリデーションルールを編集する前に、対象のフォームが実際にどちらをimportしているか確認すること）
+### `User` のバリデーションは共有パッケージ `packages/shared-schemas` に集約されている
+`User` の形状に対するZodスキーマ（`userSchema`/`UserInput`）と `Gender` の許可値（`GENDER_VALUES`/`Gender`型）は `packages/shared-schemas/src/user.ts` に一本化されています。backend/frontendはどちらもこれをworkspace依存 `@ts-crud/shared-schemas`（`package.json`の`dependencies`に`"*"`で指定、npm workspacesにより`packages/shared-schemas`へのシンボリックリンクとして解決される）として参照する、ビルドステップなしの構成です。`main`/`types`が`./src/index.ts`（コンパイル前のTS）を直接指しており、backend側は`tsx`が、frontend側はNext.js（Turbopack、App Router）がそれぞれ自動的にトランスパイルします（frontend側で`next.config.ts`に`transpilePackages`を追加する必要はありません — Turbopack + App RouterはワークスペースパッケージのTSを自動でトランスパイルします）。
+- `backend/src/schemas/user.ts` は `@ts-crud/shared-schemas` から `userSchema`/`UserInput` を re-export しているだけ（`users.ts`の`zValidator`はこれ経由で共有スキーマを使用）。同ファイルにはbackend専用の一覧取得クエリ用スキーマ `userQuerySchema`/`UserQuery` も定義されています（こちらはfrontendと共有しない）。
+- `frontend/app/validations/user-schemas.ts` も同様に re-export のみ（型名`UserFormData`は呼び出し側`user-form.tsx`に合わせたローカルエイリアス）。
+- `frontend/types/user.ts` の `User.gender` も `@ts-crud/shared-schemas` の `Gender` 型を使用しています。
 
-`Gender` enum（`MALE | FEMALE | OTHER | PREFER_NOT_TO_SAY`）は `backend/prisma/schema.prisma` で定義されていますが、フロントエンドの各zodスキーマや `frontend/types/user.ts` では文字列リテラルとして手動で再定義されています。共有パッケージが存在しないため、新しいenum値を追加する場合はこれら全箇所とPrismaマイグレーションを更新する必要があります。
+ただし `Gender` の実際の値（`MALE | FEMALE | OTHER | PREFER_NOT_TO_SAY`）自体は `backend/prisma/schema.prisma` の `enum Gender` にも独立して存在し続けます。Prisma Client（`backend/src/generated/prisma`）はbackend専用の生成物でfrontendから参照できないため、この部分の重複は共有パッケージ導入後も残っています — 新しいenum値を追加する場合は `schema.prisma`（→マイグレーション）と `packages/shared-schemas/src/user.ts` の `GENDER_VALUES` の両方を更新する必要があります。
 
 ### Prismaクライアントの生成先
 generatorの出力先は（デフォルトの `node_modules/.prisma` ではなく）`backend/src/generated/prisma` で、`lib/prisma.ts` と `routes/users.ts` から `../generated/prisma` としてimportされています。gitignore対象なので、クローン後やスキーマ変更後は `npx prisma generate` を実行しないとバックエンドの型チェック・起動ができません。`lib/prisma.ts` は `@prisma/adapter-pg` ドライバアダプタを使用しています（Prisma 7では明示的なアダプタが必須で、素の `DATABASE_URL` へのフォールバックはありません）。

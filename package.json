@@ -1,0 +1,9 @@
+{
+  "name": "ts-crud",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend",
+    "packages/*"
+  ]
+}
