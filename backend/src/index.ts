@@ -1,21 +1,8 @@
-import { Hono } from "hono";
-import users from "./routes/users";
-import auth from "./routes/auth";
 import { serve } from "@hono/node-server";
-import { cors } from "hono/cors";
+import app from "./app";
 
-const app = new Hono();
-
-app.use(
-  "*",
-  cors({
-    origin: "http://localhost:3000",
-    credentials: true,
-  })
-)
-app.route("/auth", auth);
-app.route("/users", users);
-
+// wrangler.jsonc の main はこのファイルを指しており、Cloudflare Workers向けには
+// この default export（fetchハンドラを持つHonoアプリ）が使われる。
 export default app;
 
 serve({
