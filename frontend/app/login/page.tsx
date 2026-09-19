@@ -28,7 +28,9 @@ export default function LoginPage() {
     const data = await response.json();
 
     if (!response.ok) {
-      setError(data.error ?? "ログインに失敗しました");
+      setError(
+        typeof data.error === "string" ? data.error : "ログインに失敗しました"
+      );
       return;
     }
 
@@ -36,46 +38,45 @@ export default function LoginPage() {
   };
 
   return (
-    <main>
-      <h1>ログイン</h1>
+    <div className="max-w-md mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-6">
+        ログイン
+      </h1>
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>
-            メールアドレス
-          </label>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          type="email"
+          placeholder="メールアドレス"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full border p-2"
+        />
 
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label>
-            パスワード
-          </label>
-
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
+        <input
+          type="password"
+          placeholder="パスワード"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full border p-2"
+        />
 
         {error && (
-          <p>{error}</p>
+          <p className="text-red-600">
+            {error}
+          </p>
         )}
 
-        <button type="submit">
+        <button
+          type="submit"
+          className="w-full bg-blue-600 text-white p-2 rounded"
+        >
           ログイン
         </button>
       </form>
 
-      <Link href="/register" className="text-blue-600">
+      <Link href="/register" className="mt-4 inline-block text-blue-600">
         アカウントをお持ちでない方はこちら
       </Link>
-    </main>
+    </div>
   );
 }

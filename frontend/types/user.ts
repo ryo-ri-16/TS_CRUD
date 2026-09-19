@@ -1,9 +1,11 @@
+import type { Gender } from "@ts-crud/shared-schemas";
+
 export type User = {
   id: number;
   name: string;
   email: string;
   age: number | null;
-  gender: "MALE" | "FEMALE" | "OTHER" | "PREFER_NOT_TO_SAY";
+  gender: Gender;
   description: string | null;
   createdAt: string;
   updatedAt: string;

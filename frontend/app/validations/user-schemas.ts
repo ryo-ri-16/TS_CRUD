@@ -1,26 +1,5 @@
-import { z } from "zod";
-
-export const userSchema = z.object({
-  name: z
-    .string()
-    .min(1, "名前を入力してください"),
-
-  age: z
-    .number()
-    .int("年齢は整数で入力してください")
-    .min(0, "年齢は0以上で入力してください")
-    .max(150, "年齢が不正です"),
-
-  gender: z.enum([
-    "MALE",
-    "FEMALE",
-    "OTHER",
-    "PREFER_NOT_TO_SAY",
-  ]),
-
-  description: z
-    .string()
-    .max(500, "説明は500文字以内で入力してください"),
-});
-
-export type UserFormData = z.infer<typeof userSchema>;
+// User の形状バリデーションはbackendと共通なので @ts-crud/shared-schemas（packages/shared-schemas）
+// に集約し、ここではそれを再エクスポートしている。実体は packages/shared-schemas/src/user.ts。
+// 型名 UserFormData は既存の呼び出し側（user-form.tsx）に合わせたローカルエイリアス。
+export { userSchema } from "@ts-crud/shared-schemas";
+export type { UserInput as UserFormData } from "@ts-crud/shared-schemas";

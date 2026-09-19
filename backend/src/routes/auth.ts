@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { prisma } from "../lib/prisma";
 import { hashPassword } from "../lib/password";
 import { zValidator } from "@hono/zod-validator";
+import type { Hook } from "@hono/zod-validator";
 import { verifyPassword } from "../lib/password";
 import { generateSessionId } from "../lib/session";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
@@ -20,9 +21,21 @@ const loginSchema = z.object({
   password: z.string().min(1, "パスワードを入力してください"),
 });
 
+// zValidatorのデフォルトの失敗レスポンスは { error: ZodError } で、
+// フロントの `{ error: string }` 前提のエラー表示と形が合わないため、
+// 常に文字列メッセージを返すよう正規化する。
+const validationErrorHook: Hook<unknown, any, any> = (result, c) => {
+  if (!result.success) {
+    return c.json(
+      { error: result.error.issues[0]?.message ?? "入力内容が正しくありません" },
+      400
+    );
+  }
+};
+
 auth.post(
   "/register",
-  zValidator("json", registerSchema),
+  zValidator("json", registerSchema, validationErrorHook),
   async (c) => {
     const body = c.req.valid("json");
 
@@ -64,7 +77,7 @@ auth.post(
 
 auth.post(
   "/login",
-  zValidator("json", loginSchema),
+  zValidator("json", loginSchema, validationErrorHook),
   async (c) => {
     const body = c.req.valid("json");
 

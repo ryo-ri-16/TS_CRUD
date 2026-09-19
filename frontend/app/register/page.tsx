@@ -33,7 +33,9 @@ export default function RegisterPage() {
     const data = await response.json();
 
     if (!response.ok) {
-      setError(data.error ?? "登録に失敗しました");
+      setError(
+        typeof data.error === "string" ? data.error : "登録に失敗しました"
+      );
       return;
     }
 
