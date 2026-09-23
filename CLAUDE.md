@@ -18,8 +18,10 @@
 ### バックエンド (`backend/`)
 ```
 npm run dev     # tsx watch src/index.ts — :3001 で開発サーバー起動
-npm run build   # tsc
-npm run start   # node dist/index.js（事前に build が必要）
+npm run build   # tsc -p tsconfig.build.json（テスト関連ファイルを除外）。outDir未設定のため.jsはソースの隣に出力され、startが参照するdist/は現状生成されない
+npm run start   # node dist/index.js（上記の理由で現状は動かない）
+npm test        # vitest run — テスト用DB（ts_crud_test）が必要。詳細は「テスト（backend）」参照
+npm run test:watch
 ```
 Prisma（スキーマは `backend/prisma/schema.prisma`、クライアントは `backend/src/generated/prisma` に生成）:
 ```
@@ -38,7 +40,9 @@ npm run lint    # eslint
 ```
 
 ### データベース
-リポジトリルートの `docker-compose.yml` で Postgres 16 が `:5432` で起動します（DB名 `TS_CRUD`、ユーザー/パスワードは `postgres`/`password`）。`backend/.env` とルートの `.env` の両方に Prisma 用の `DATABASE_URL` が定義されています。
+リポジトリルートの `docker-compose.yml` で Postgres 16 が `:5432` で起動します（ユーザー/パスワードは `postgres`/`password`）。`backend/.env` とルートの `.env` の両方に Prisma 用の `DATABASE_URL`（`postgresql://postgres:password@localhost:5432/postgres`）が定義されています。
+
+**注意（この開発環境での実態）**: ホスト上のネイティブPostgres（`127.0.0.1:5432` をLISTEN）とDockerコンテナ `ts_crud-db-1` の両方が5432を使っており、アプリが実際に接続しているのは**ネイティブ側**のDB名 `postgres` です（Docker側のDB `TS_CRUD` にはテーブルがなく、`docker exec ts_crud-db-1 psql` で見ても空）。中身を直接確認するときは `PGPASSWORD=password psql -h 127.0.0.1 -p 5432 -U postgres -d postgres` を使ってください。
 
 ## アーキテクチャ
 
@@ -59,6 +63,20 @@ npm run lint    # eslint
 
 ### Prismaクライアントの生成先
 generatorの出力先は（デフォルトの `node_modules/.prisma` ではなく）`backend/src/generated/prisma` で、`lib/prisma.ts` と `routes/users.ts` から `../generated/prisma` としてimportされています。gitignore対象なので、クローン後やスキーマ変更後は `npx prisma generate` を実行しないとバックエンドの型チェック・起動ができません。`lib/prisma.ts` は `@prisma/adapter-pg` ドライバアダプタを使用しています（Prisma 7では明示的なアダプタが必須で、素の `DATABASE_URL` へのフォールバックはありません）。
+
+### テスト（backend）
+vitest + Honoの `app.request()`（HTTPサーバーを起動せず、fetch形式のリクエストをアプリに直接渡す）で、実DBを使ったルートの統合テストを行っています。テストファイルは `backend/src/routes/*.test.ts`。**frontendのテストはまだありません。**
+- **`app.ts` と `index.ts` の分離**: Honoアプリの組み立ては `src/app.ts`、`serve()` によるサーバー起動は `src/index.ts`（importするだけで:3001を開くため、テストは必ず `../app` をimportする）。`index.ts` の `export default app` はwrangler（`main: src/index.ts`）用。
+- **テスト用DB `ts_crud_test`**: 開発DBと同じネイティブPostgres上の別DB。初回とマイグレーション追加後は次を実行（`migrate deploy` は非対話・データを消さない）:
+  ```
+  PGPASSWORD=password psql -h 127.0.0.1 -p 5432 -U postgres -d postgres -c "CREATE DATABASE ts_crud_test;"   # 初回のみ
+  cd backend && DATABASE_URL="postgresql://postgres:password@127.0.0.1:5432/ts_crud_test" npx prisma migrate deploy
+  ```
+  `vitest.config.ts` の `test.env` がテスト実行時だけ `DATABASE_URL` をこのDBに上書きする（`lib/prisma.ts` のdotenvは設定済みの環境変数を上書きしない）。
+- **データのリセット**: `src/test/setup.ts` が各テスト前に `Session`→`User` を全削除する。全テストファイルが同じDBを共有するため、`vitest.config.ts` で `fileParallelism: false`（直列実行）にしている — 並列にすると他ファイルの実行中データを消し合って失敗する。
+- **認証が必要なルート**: `src/test/helpers.ts` の `registerAndLogin(name, email)` が実際の register→login を通して `{ id, cookie }` を返す。ブラウザがないのでCookieは手動で `Cookie` ヘッダーに付ける。大量データが必要なテストは `prisma.user.createMany` で直接投入する（argon2を通さないので速い）。
+- **型**: `res.json()` の戻り値は `unknown`。検証したい形に `as` でキャストする（vitestは型チェックしないので、`npx tsc --noEmit` でも確認すること）。
+- **既知の不具合**: `PATCH /users/:id` が `passwordHash` をレスポンスに含める（他のルートは `select` で除外）。`users.test.ts` に `it.fails` で記録してあり、修正するとそのテストがエラーになるので `it` に戻すこと。
 
 ### フロントエンドのルーティング/データ取得パターン
 App Routerでサーバーコンポーネントとクライアントコンポーネントを併用しています。
