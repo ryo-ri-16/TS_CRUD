@@ -19,7 +19,7 @@ export default function DeleteButton({ userId }: Props) {
     }
 
     const response = await fetch(
-      `http://localhost:3001/users/${userId}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`,
       {
         method: "DELETE",
       }

@@ -52,13 +52,13 @@ export default async function UsersPage({ searchParams }: Props) {
   });
   if (search) query.set("search", search);
 
-  const response = await fetch(
-    `http://localhost:3001/users?${query.toString()}`,
-    {
-      headers,
-      cache: "no-store",
-    }
-  );
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/users?${query.toString()}`,
+      {
+        headers,
+        cache: "no-store",
+      }
+    );
 
   if (!response.ok) {
     return (

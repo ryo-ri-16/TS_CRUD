@@ -9,7 +9,7 @@ export const UserCreate = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const response = await fetch("http://localhost:3001/users", {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, gender, age: Number(age), description }),

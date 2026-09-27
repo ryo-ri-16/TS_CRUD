@@ -7,7 +7,7 @@ export default function LogoutButton() {
 
   const handleLogout = async () => {
     const response = await fetch(
-      "http://localhost:3001/auth/logout",
+      `${process.env.NEXT_PUBLIC_API_URL}/auth/logout`,
       {
         method: "POST",
         credentials: "include",
