@@ -47,8 +47,8 @@ export default function UserForm({ user }: Props) {
 
     const response = await fetch(
       isEdit
-        ? `http://localhost:3001/users/${user.id}`
-        : "http://localhost:3001/users",
+        ? `${process.env.NEXT_PUBLIC_API_URL}/users/${user.id}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/users`,
       {
         method: isEdit ? "PATCH" : "POST",
         headers: {

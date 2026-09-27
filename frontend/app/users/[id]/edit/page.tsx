@@ -16,7 +16,7 @@ export default async function EditUserPage({ params }: Props) {
   const sessionId = cookieStore.get("session_id");
 
   const response = await fetch(
-    `http://localhost:3001/users/${id}`,
+    `${process.env.NEXT_PUBLIC_API_URL}/users/${id}`,
     {
       headers: {
         Cookie: sessionId

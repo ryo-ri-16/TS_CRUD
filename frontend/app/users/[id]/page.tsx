@@ -23,7 +23,7 @@ export default async function UserDetailPage({ params }: Props) {
   };
 
   const meResponse = await fetch(
-    "http://localhost:3001/auth/me",
+    `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
     {
       headers,
       cache: "no-store",
@@ -37,7 +37,7 @@ export default async function UserDetailPage({ params }: Props) {
   const currentUser: User = await meResponse.json();
 
   const response = await fetch(
-    `http://localhost:3001/users/${id}`,
+    `${process.env.NEXT_PUBLIC_API_URL}/users/${id}`,
     {
       headers: {
         Cookie: sessionId
