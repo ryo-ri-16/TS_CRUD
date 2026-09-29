@@ -170,7 +170,6 @@ export default async function UsersPage({ searchParams }: Props) {
             >
               <h2 className="text-lg font-semibold mb-1">{user.name}</h2>
               <div className="text-sm text-gray-600 space-y-1">
-                <p>{user.email}</p>
                 <p>年齢: {user.age ?? "未設定"}</p>
                 <p>性別: {GENDER_LABEL[user.gender] ?? "未設定"}</p>
                 {user.description && (
