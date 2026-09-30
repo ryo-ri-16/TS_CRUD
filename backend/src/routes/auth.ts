@@ -1,10 +1,10 @@
 import { Hono } from "hono";
-import { prisma } from "../lib/prisma";
-import { hashPassword } from "../lib/password";
+import { prisma } from "../lib/prisma.js";
+import { hashPassword } from "../lib/password.js";
 import { zValidator } from "@hono/zod-validator";
 import type { Hook } from "@hono/zod-validator";
-import { verifyPassword } from "../lib/password";
-import { generateSessionId } from "../lib/session";
+import { verifyPassword } from "../lib/password.js";
+import { generateSessionId } from "../lib/session.js";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { z } from "zod";
 

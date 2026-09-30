@@ -5,7 +5,9 @@
     "moduleResolution": "Bundler",
     "strict": true,
     "skipLibCheck": true,
-    "noEmit": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "declaration": true,
     "types": ["node"]
   },
   "include": ["src"]

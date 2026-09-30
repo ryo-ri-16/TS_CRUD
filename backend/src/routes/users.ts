@@ -1,10 +1,10 @@
 import { Hono } from "hono";
-import { prisma } from "../lib/prisma";
-import { Gender, Prisma } from "../generated/prisma";
+import { prisma } from "../lib/prisma.js";
+import { Gender, Prisma } from "../generated/prisma/index.js";
 import { zValidator } from "@hono/zod-validator";
-import { userSchema, userQuerySchema } from "../schemas/user";
-import { authMiddleware } from "../middleware/auth";
-import type { Variables } from "../types/context";
+import { userSchema, userQuerySchema } from "../schemas/user.js";
+import { authMiddleware } from "../middleware/auth.js";
+import type { Variables } from "../types/context.js";
 
 const users = new Hono<{
   Variables: Variables;

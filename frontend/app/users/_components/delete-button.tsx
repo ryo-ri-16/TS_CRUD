@@ -22,6 +22,7 @@ export default function DeleteButton({ userId }: Props) {
       `${process.env.NEXT_PUBLIC_API_URL}/users/${userId}`,
       {
         method: "DELETE",
+	credentials: "include",
       }
     );
 

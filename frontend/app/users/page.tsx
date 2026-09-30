@@ -53,7 +53,7 @@ export default async function UsersPage({ searchParams }: Props) {
   if (search) query.set("search", search);
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/users?${query.toString()}`,
+      `${process.env.API_URL}/users?${query.toString()}`,
       {
         headers,
         cache: "no-store",

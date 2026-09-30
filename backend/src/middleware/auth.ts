@@ -1,6 +1,6 @@
 import { getCookie } from "hono/cookie";
 import { createMiddleware } from "hono/factory";
-import { prisma } from "../lib/prisma";
+import { prisma } from "../lib/prisma.js";
 import type { Variables } from '../types/context';
 
 export const authMiddleware = createMiddleware<{
